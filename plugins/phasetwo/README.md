@@ -60,8 +60,8 @@ Each client authenticates the MCP server differently. Full walkthroughs:
 Copyright 2026 Phase Two, Inc.
 
 The skill content and documentation under `skills/` is licensed
-[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/); the scripts and
-bundled authentication-flow assets are licensed
+[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/); the bundled
+authentication-flow assets are licensed
 [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0). Each file carries its
 own `SPDX-License-Identifier`. See [`LICENSE`](../../LICENSE),
 [`LICENSE-CODE`](../../LICENSE-CODE), [`NOTICE`](../../NOTICE), and the

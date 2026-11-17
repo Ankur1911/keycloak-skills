@@ -184,7 +184,7 @@ place — the flow still has to be authored and bound.
 ## Verify by logging in, not by reading configuration
 
 Every setting here can be correct-looking and inert, and no tool reports routing — routing is
-behaviour. Have the user (or a script) perform a real login twice:
+behaviour. Perform a real login twice:
 
 | Submit on the login page | Expect |
 |---|---|
@@ -197,18 +197,38 @@ redirector that hijacks every login, and it is the check people skip.
 If you are scripting this rather than clicking through it, two details will otherwise cost you
 an afternoon:
 
-- Keycloak sets `AUTH_SESSION_ID` and `KC_RESTART` as `Secure; SameSite=None`. Browsers send
-  them over `http://localhost` anyway — loopback is a secure context — but HTTP clients
-  typically refuse, and every form POST then returns `400` *"Cookie not found. Please make sure
-  cookies are enabled in your browser."* Clear the flag on each response
-  (`cookie.secure = False` on the Python cookie jar).
+- Keycloak sets `AUTH_SESSION_ID` and `KC_RESTART` as `Secure; SameSite=None`. Browsers and
+  `curl` send them over `http://localhost` (loopback counts as secure), but not over plain
+  `http://` to any other host, and every form POST then returns `400` *"Cookie not found."* Use
+  `https` or `localhost`; some other HTTP clients need the Secure flag cleared on each response.
 - A user who has **never** federated and one who **already** has a federated identity are sent
   onward differently (an offered link versus an immediate redirect with a `login_hint`). Follow
   both, or a test passes on the first login and fails on the second.
 
-[`../scripts/browser_login.py`](../scripts/browser_login.py) drives the whole round trip and
-prints where each step went — usable against either tooling path since it only speaks plain
-HTTP, not MCP.
+The routing check needs no admin access, so plain HTTP works on either tooling path:
+
+```bash
+BASE=http://localhost:8080/auth; REALM=<realm>; JAR=$(mktemp)
+form_action() { grep -o 'action="[^"]*"' | head -1 | sed -e 's/^action="//' -e 's/"$//' -e 's/&amp;/\&/g'; }
+login_page() {   # fresh login page for this client → prints the form's POST URL
+  curl -s -G -c "$JAR" -b "$JAR" "$BASE/realms/$REALM/protocol/openid-connect/auth" \
+    --data-urlencode "client_id=<client-id>" --data-urlencode "redirect_uri=<app-redirect-uri>" \
+    -d response_type=code -d scope=openid \
+    -d code_challenge_method=S256 -d code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM \
+    | form_action   # a fixed PKCE challenge is fine: the code is never redeemed
+}
+# Routed domain: expect a 302 whose redirect URL is the customer's IdP (or a broker endpoint
+# that leads there), not a page with a password field
+curl -s -c "$JAR" -b "$JAR" -o /dev/null -w '%{http_code} %{redirect_url}\n' \
+  --data-urlencode "username=someone@customer.example" "$(login_page)"
+# Any other domain: expect 200 and a password field (prints 1 or more)
+curl -s -c "$JAR" -b "$JAR" --data-urlencode "username=someone@other.example" \
+  "$(login_page)" | grep -c 'type="password"'
+```
+
+This proves the routing. Completing the IdP login and the password login needs real
+credentials, so the developer does that part in a browser. Don't ask them for a password to
+script it.
 
 Afterwards, a correctly federated user has a non-empty federated identity and **no** password
 credential in your realm. That distinction matters: hand-creating local accounts with matching

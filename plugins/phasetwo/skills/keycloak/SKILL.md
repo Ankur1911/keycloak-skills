@@ -16,7 +16,7 @@ description: >-
   code — that's `securing-apps`.
 license: CC-BY-SA-4.0
 metadata:
-  version: '0.17.0'
+  version: '0.17.1'
   author: Phase Two <support@phasetwo.io>
 ---
 
