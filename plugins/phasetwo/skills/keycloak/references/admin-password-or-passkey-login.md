@@ -19,8 +19,7 @@ password login, and vice versa. User security depends on which credential they a
 
 ```bash
 BASE=http://localhost:8080/auth
-ADMIN_TOKEN=<admin-access-token>   # from the developer, never their password — SKILL.md "Admin token"
-H="Authorization: Bearer $ADMIN_TOKEN"
+H="Authorization: Bearer <admin-access-token>"   # token from the developer, never their password — SKILL.md "Admin token"
 REALM=<realm>
 FLOW='Password-or-passkey'
 SUB='Password-or-passkey forms'

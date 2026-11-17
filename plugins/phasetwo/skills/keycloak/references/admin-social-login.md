@@ -35,12 +35,11 @@ Confirmed against Keycloak's own `org.keycloak.social` package (one factory per 
 ```bash
 BASE=http://localhost:8080       # include the relative path if configured
 REALM=myrealm
-# Self-managed Keycloak: $ADMIN_TOKEN is a `master` admin access token the developer gives you.
+# Self-managed Keycloak: <admin-access-token> is a `master` admin access token the developer gives you.
 # Does NOT apply to Phase Two hosted deployments — there
 # is no self-service admin REST credential of any kind there (confirmed with Phase Two).
 # Without MCP, use the dashboard instead; raw REST is a dead end here, not a fallback.
-ADMIN_TOKEN=<admin-access-token>   # from the developer, never their password — SKILL.md "Admin token"
-H="Authorization: Bearer $ADMIN_TOKEN"
+H="Authorization: Bearer <admin-access-token>"   # token from the developer, never their password — SKILL.md "Admin token"
 
 curl -s -X POST "$BASE/admin/realms/$REALM/identity-provider/instances" \
   -H "$H" -H 'Content-Type: application/json' -d '{

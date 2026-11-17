@@ -300,23 +300,21 @@ That is Step 2.
 ```bash
 # Ask the developer for an access token for this realm (e.g. one their app or a test client
 # obtained). Don't ask for or read a client secret or password to mint it yourself.
-TOKEN=<access-token-from-the-developer>
-
-curl -i -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/reports
+curl -i -H "Authorization: Bearer <access-token-from-the-developer>" http://localhost:8080/api/reports
 ```
 
 **4. Confirm which roles Quarkus actually resolved.** This is the check that separates "the token has
 no roles" from "Quarkus did not look where the roles are":
 
 ```bash
-curl -s -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/reports/whoami | jq
+curl -s -H "Authorization: Bearer <access-token-from-the-developer>" http://localhost:8080/api/reports/whoami | jq
 ```
 
 `identity.getRoles()` is the resolved set, after all four resolution steps above. Compare it against
 what is actually in the token:
 
 ```bash
-echo "$TOKEN" | cut -d. -f2 | base64 -d 2>/dev/null | jq '{iss, aud, azp, groups, realm_access, resource_access}'
+echo '<access-token-from-the-developer>' | cut -d. -f2 | base64 -d 2>/dev/null | jq '{iss, aud, azp, groups, realm_access, resource_access}'
 ```
 
 - Roles in `realm_access.roles` but `getRoles()` empty → resolution problem. Check for a `groups`

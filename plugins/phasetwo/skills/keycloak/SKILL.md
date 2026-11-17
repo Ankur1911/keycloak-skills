@@ -109,7 +109,7 @@ context. Don't ask twice in the same conversation once it's established.
 
 | Answer | Tooling |
 |---|---|
-| **Yes — Phase Two hosted Keycloak.** | **mcp.** The `phasetwo` plugin declares this server, so it should already be there as `keycloak` (`https://mcp.phasetwo.io/mcp`). If its tools aren't available, that is usually an unauthorized OAuth connection rather than a missing server — have the developer check `/mcp`; outside the plugin, `claude mcp add --transport http keycloak https://mcp.phasetwo.io/mcp`. If they decline, say plainly that `rest` is not a substitute here: a Phase Two hosted deployment has no self-service admin REST credential of any kind, so the `rest` files fail at their very first step — there is nothing to put in `$ADMIN_TOKEN`. Point them at reconnecting MCP or the dashboard. |
+| **Yes — Phase Two hosted Keycloak.** | **mcp.** The `phasetwo` plugin declares this server, so it should already be there as `keycloak` (`https://mcp.phasetwo.io/mcp`). If its tools aren't available, that is usually an unauthorized OAuth connection rather than a missing server — have the developer check `/mcp`; outside the plugin, `claude mcp add --transport http keycloak https://mcp.phasetwo.io/mcp`. If they decline, say plainly that `rest` is not a substitute here: a Phase Two hosted deployment has no self-service admin REST credential of any kind, so the `rest` files fail at their very first step — there is there is no admin token to use. Point them at reconnecting MCP or the dashboard. |
 | **No — self-managed Keycloak** (bare metal, Docker, Kubernetes; the developer has direct Admin REST access). | **rest.** |
 
 If the answer is ambiguous, ask — don't guess and don't default to either side.
@@ -118,7 +118,7 @@ If the answer is ambiguous, ask — don't guess and don't default to either side
 
 - **Base URL.** The developer's configured value is `${user_config.keycloak_base_url}`. Use it as
   `$BASE`; if it reads as an unexpanded `${user_config…}` placeholder or is empty, nothing is set — ask.
-- **Admin token.** Every `rest` file needs `$ADMIN_TOKEN`, a `master`-realm admin access token.
+- **Admin token.** Every `rest` file needs an admin token (`<admin-access-token>` in the snippets), a `master`-realm admin access token.
   **Ask the developer for the token itself** — never for their admin password, and never read a
   password or token from files, environment variables or keychains on their machine. If they need
   to mint one, they do it in their own terminal (`admin-cli`, or a service-account client holding

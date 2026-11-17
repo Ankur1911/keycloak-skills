@@ -18,7 +18,7 @@ Self-managed Keycloak only. This does NOT apply to Phase Two hosted deployments 
 is no self-service admin REST credential of any kind there (confirmed with Phase Two).
 Without MCP, use the dashboard instead; raw REST is a dead end there, not a fallback.
 
-`$ADMIN_TOKEN` is a `master`-realm admin access token **the developer gives you** — ask for
+`<admin-access-token>` is a `master`-realm admin access token **the developer gives you** — ask for
 the token, never for their admin password (see SKILL.md "Admin token"). A `master` token
 **expires after 60 seconds** by default, so it can go stale partway through the task. A `401
 Unauthorized` halfway through means the token expired — **not** that the endpoint,
@@ -31,9 +31,8 @@ cat > /tmp/kc <<'EOF'
 # kc METHOD PATH [curl args...] — one admin REST call with the developer's token.
 # Body goes to stdout (pipe it to jq); "HTTP <status>" goes to stderr.
 BASE=http://localhost:8080/auth   # include the relative path if one is configured
-ADMIN_TOKEN=<admin-access-token>  # from the developer, never their password
 m=$1 p=$2; shift 2
-exec curl -s -X "$m" "$BASE/admin/realms$p" -H "Authorization: Bearer $ADMIN_TOKEN" \
+exec curl -s -X "$m" "$BASE/admin/realms$p" -H "Authorization: Bearer <admin-access-token>" \
   -H "Content-Type: application/json" -w "%{stderr}HTTP %{http_code}\n" "$@"
 EOF
 chmod +x /tmp/kc
