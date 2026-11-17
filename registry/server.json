@@ -1,0 +1,18 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.p2-inc/keycloak",
+  "title": "Phase Two Keycloak",
+  "description": "Set up passwordless login, SSO, organizations and clusters on Phase Two hosted Keycloak.",
+  "version": "0.17.1",
+  "websiteUrl": "https://phasetwo.io/docs/introduction/",
+  "repository": {
+    "url": "https://github.com/p2-inc/keycloak-skills",
+    "source": "github"
+  },
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://mcp.phasetwo.io/mcp"
+    }
+  ]
+}
