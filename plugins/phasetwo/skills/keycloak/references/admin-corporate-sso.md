@@ -314,7 +314,11 @@ curl -s -c "$JAR" -b "$JAR" --data-urlencode "username=someone@other.example" \
 
 This proves the routing. Completing the IdP login and the password login needs real
 credentials, so the developer does that part in a browser. Don't ask them for a password to
-script it.
+script it. **Never set, reset or change a user's password, and never impersonate a user, to
+make a test login complete.** That rewrites the account you are verifying: the internal user's
+real password stops working, which is exactly the regression this check exists to catch. With
+no test credential, stop after the routing check and hand the developer the two logins to
+finish by hand.
 
 Two client-side details that otherwise cost an afternoon:
 
