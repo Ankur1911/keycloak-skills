@@ -19,12 +19,11 @@ flow is necessary but not sufficient.
 
 ```bash
 BASE=http://localhost:8080/auth       # include the relative path if one is configured
-# Self-managed Keycloak: $ADMIN_TOKEN is a `master` admin access token the developer gives you.
+# Self-managed Keycloak: <admin-access-token> is a `master` admin access token the developer gives you.
 # Does NOT apply to Phase Two hosted deployments — there
 # is no self-service admin REST credential of any kind there (confirmed with Phase Two).
 # Without MCP, use the dashboard instead; raw REST is a dead end here, not a fallback.
-ADMIN_TOKEN=<admin-access-token>   # from the developer, never their password — SKILL.md "Admin token"
-H="Authorization: Bearer $ADMIN_TOKEN"
+H="Authorization: Bearer <admin-access-token>"   # token from the developer, never their password — SKILL.md "Admin token"
 REALM=<realm>
 ```
 

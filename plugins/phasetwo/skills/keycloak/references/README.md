@@ -151,14 +151,13 @@ Both `admin-passwordless-magic-link-org-restrict*.md` files reference the shared
 (`ext-magic-create-nonexistent-user=false`), not a placeholder; the same key the plain
 magic-link references already document.
 
-`admin-passwordless-magic-link.md` references `scripts/verify_magic_link.py` — one end-to-end
-check (known address gets a working link, unknown address gets the same page and no mail or
-account) that exits 0 only when the configuration is done. Tooling-agnostic, plain HTTP; the MCP
+`admin-passwordless-magic-link.md` ends with a `curl` round trip (known address gets a working
+link, unknown address gets the same page and no mail or account). It is plain HTTP, so the MCP
 variant can use it too.
 
-Both `admin-corporate-sso*.md` files reference shared assets/scripts at the skill root:
-`assets/home-idp.partial-import.json`, `assets/home-idp-with-orgs-check.partial-import.json`, and
-`scripts/browser_login.py` (tooling-agnostic — verifies routing over plain HTTP either way).
+Both `admin-corporate-sso*.md` files reference shared assets at the skill root,
+`assets/home-idp.partial-import.json` and `assets/home-idp-with-orgs-check.partial-import.json`,
+and verify routing with the same plain-HTTP `curl` check.
 `admin-org-restrict-login-mcp.md` references `assets/org-browser-flow-by-org-name.partial-import.json`
 and `assets/org-browser-flow-by-org-id.partial-import.json` — two alternative *configurations* of
 the same flow alias, not two coexisting flows; pick one up front.

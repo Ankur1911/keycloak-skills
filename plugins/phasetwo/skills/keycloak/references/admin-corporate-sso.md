@@ -37,12 +37,11 @@ stage below will fail in a more confusing way:
 
 ```bash
 BASE=http://localhost:8080/auth       # include the relative path if one is configured
-# Self-managed Keycloak: $ADMIN_TOKEN is a `master` admin access token the developer gives you.
+# Self-managed Keycloak: <admin-access-token> is a `master` admin access token the developer gives you.
 # Does NOT apply to Phase Two hosted deployments — there
 # is no self-service admin REST credential of any kind there (confirmed with Phase Two).
 # Without MCP, use the dashboard instead; raw REST is a dead end here, not a fallback.
-ADMIN_TOKEN=<admin-access-token>   # from the developer, never their password — SKILL.md "Admin token"
-H="Authorization: Bearer $ADMIN_TOKEN"
+H="Authorization: Bearer <admin-access-token>"   # token from the developer, never their password — SKILL.md "Admin token"
 REALM=<realm>
 
 curl -s -o /dev/null -w '%{http_code}\n' "$BASE/realms/$REALM/orgs" -H "$H"   # expect 200
@@ -294,21 +293,35 @@ is behaviour. Perform a real login twice:
 The second row is not optional — it's what distinguishes correct domain discovery from a
 redirector that hijacks every login.
 
-[`../scripts/browser_login.py`](../scripts/browser_login.py) drives the whole round trip over
-plain HTTP and prints where each step went:
-
 ```bash
-python3 browser_login.py --realm acme --client acme-portal \
-  --redirect-uri http://localhost:9999/callback \
-  --username someone@customer.example --idp-username u --idp-password p
+BASE=http://localhost:8080/auth; REALM=<realm>; JAR=$(mktemp)
+form_action() { grep -o 'action="[^"]*"' | head -1 | sed -e 's/^action="//' -e 's/"$//' -e 's/&amp;/\&/g'; }
+login_page() {   # fresh login page for this client → prints the form's POST URL
+  curl -s -G -c "$JAR" -b "$JAR" "$BASE/realms/$REALM/protocol/openid-connect/auth" \
+    --data-urlencode "client_id=<client-id>" --data-urlencode "redirect_uri=<app-redirect-uri>" \
+    -d response_type=code -d scope=openid \
+    -d code_challenge_method=S256 -d code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM \
+    | form_action   # a fixed PKCE challenge is fine: the code is never redeemed
+}
+# Routed domain: expect a 302 whose redirect URL is the customer's IdP (or a broker endpoint
+# that leads there), not a page with a password field
+curl -s -c "$JAR" -b "$JAR" -o /dev/null -w '%{http_code} %{redirect_url}\n' \
+  --data-urlencode "username=someone@customer.example" "$(login_page)"
+# Any other domain: expect 200 and a password field (prints 1 or more)
+curl -s -c "$JAR" -b "$JAR" --data-urlencode "username=someone@other.example" \
+  "$(login_page)" | grep -c 'type="password"'
 ```
+
+This proves the routing. Completing the IdP login and the password login needs real
+credentials, so the developer does that part in a browser. Don't ask them for a password to
+script it.
 
 Two client-side details that otherwise cost an afternoon:
 
-- Keycloak sets `AUTH_SESSION_ID` and `KC_RESTART` as `Secure; SameSite=None`. Browsers send
-  them over `http://localhost` anyway (loopback is a secure context); most HTTP client libraries
-  will not, and every form POST then returns `400` *"Cookie not found."* Clear the flag on each
-  response (`cookie.secure = False` on the Python cookie jar).
+- Keycloak sets `AUTH_SESSION_ID` and `KC_RESTART` as `Secure; SameSite=None`. Browsers and
+  `curl` send them over `http://localhost` (loopback counts as secure), but not over plain
+  `http://` to any other host, and every form POST then returns `400` *"Cookie not found."* Use
+  `https` or `localhost`; some other HTTP clients need the Secure flag cleared on each response.
 - A user who has **never** federated and one who **already** has a federated identity are sent
   onward differently (an offered link versus an immediate redirect with `login_hint`). Test
   both, or a check passes on the first login and fails on the second.

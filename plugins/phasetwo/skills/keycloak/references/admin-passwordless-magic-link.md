@@ -18,7 +18,7 @@ Self-managed Keycloak only. This does NOT apply to Phase Two hosted deployments 
 is no self-service admin REST credential of any kind there (confirmed with Phase Two).
 Without MCP, use the dashboard instead; raw REST is a dead end there, not a fallback.
 
-`$ADMIN_TOKEN` is a `master`-realm admin access token **the developer gives you** — ask for
+`<admin-access-token>` is a `master`-realm admin access token **the developer gives you** — ask for
 the token, never for their admin password (see SKILL.md "Admin token"). A `master` token
 **expires after 60 seconds** by default, so it can go stale partway through the task. A `401
 Unauthorized` halfway through means the token expired — **not** that the endpoint,
@@ -31,9 +31,8 @@ cat > /tmp/kc <<'EOF'
 # kc METHOD PATH [curl args...] — one admin REST call with the developer's token.
 # Body goes to stdout (pipe it to jq); "HTTP <status>" goes to stderr.
 BASE=http://localhost:8080/auth   # include the relative path if one is configured
-ADMIN_TOKEN=<admin-access-token>  # from the developer, never their password
 m=$1 p=$2; shift 2
-exec curl -s -X "$m" "$BASE/admin/realms$p" -H "Authorization: Bearer $ADMIN_TOKEN" \
+exec curl -s -X "$m" "$BASE/admin/realms$p" -H "Authorization: Bearer <admin-access-token>" \
   -H "Content-Type: application/json" -w "%{stderr}HTTP %{http_code}\n" "$@"
 EOF
 chmod +x /tmp/kc
@@ -179,49 +178,60 @@ whether create-on-demand is off — it looks correct either way. The only way to
 is checking what happened on the *other* side: was mail sent, and did a user get
 created, for an address that should have neither.
 
-## Verifying the whole thing works — run the script once
+## Verifying the whole thing works — drive one real login
 
-Drive an actual login rather than trusting configuration alone — nothing here has a
-status endpoint that says "passwordless is working." [`../scripts/verify_magic_link.py`](../scripts/verify_magic_link.py) does the whole round trip below in one command:
+Drive an actual login rather than trusting configuration alone. Nothing here has a status
+endpoint that says "passwordless is working." Plain `curl` with a cookie jar is enough:
 
 ```bash
-python3 <skill-dir>/scripts/verify_magic_link.py --realm "$REALM" --client <client-id> \
-  --redirect-uri <app-redirect-uri> --known <an-existing-user's-email> \
-  --unknown <an-address-with-no-account> \
-  --mail-dir <capture-dir, if a local SMTP capture server writes one file per mail> \
-  --admin-token <admin-access-token, if the developer gave you one>
+BASE=http://localhost:8080/auth   # same as in /tmp/kc
+JAR=$(mktemp)
+form_action() { grep -o 'action="[^"]*"' | head -1 | sed -e 's/^action="//' -e 's/"$//' -e 's/&amp;/\&/g'; }
+login_page() {   # fresh login page for this client → prints the form's POST URL
+  curl -s -G -c "$JAR" -b "$JAR" "$BASE/realms/$REALM/protocol/openid-connect/auth" \
+    --data-urlencode "client_id=<client-id>" --data-urlencode "redirect_uri=<app-redirect-uri>" \
+    -d response_type=code -d scope=openid \
+    -d code_challenge_method=S256 -d code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM \
+    | form_action   # a fixed PKCE challenge is fine: the code is never redeemed
+}
+
+# 1. A known address: expect the "check your email" page and NO password field (prints 0)
+curl -s -c "$JAR" -b "$JAR" --data-urlencode "username=<an-existing-user's-email>" \
+  "$(login_page)" | grep -c 'type="password"'
+
+# 3. Follow the link from the mail: expect the last URL to be the redirect URI with ?code=
+#    (curl may then fail to connect if nothing listens there; the printed URL is what counts)
+curl -s -L -c "$JAR" -b "$JAR" -o /dev/null -w '%{url_effective}\n' '<link-from-the-mail>'
+
+# 4. An address with no account: the same page as step 1 ...
+curl -s -c "$JAR" -b "$JAR" --data-urlencode "username=<an-address-with-no-account>" \
+  "$(login_page)" | grep -c 'type="password"'
+# ... and no user was created (expect [])
+/tmp/kc GET "/$REALM/users?email=<an-address-with-no-account>&exact=true"
 ```
 
-Without a capture directory, run it once to trigger the mail, then rerun with
-`--link <url>` copied from the real inbox. It prints one PASS/FAIL line per check.
-**If it ends with "All checks passed", the configuration is done — stop there** rather
-than re-inspecting flows and executions. If a check fails, the line says which
-setting to fix; fix that one thing and rerun the script.
+The checks, and which ones actually prove something:
 
-**Use this script — don't write your own test instead.** A home-made check is easy to
-get subtly wrong and will happily report success when no mail left the server: it
-confirms the page said "check your email", which the page says either way. The
-script only passes once real mail has arrived and its link has been followed to the
-application. If you can't run it (no Python 3), do the steps below by
-hand, and treat "mail arrived" and "the link reached the redirect URI" as the checks
-that matter.
+1. A known address on the client's login page gets no password field.
+2. **Mail actually arrived** (real inbox, or your capture point) with a link containing
+   `login-actions/action-token`. Check the inbox. The page says "check your email" whether
+   or not anything was sent.
+3. **The link reaches the application.** Opened with nothing else entered, it ends at the
+   app's redirect URI with an authorization `code`.
+4. An address with no account gets the *same* page as step 1. Out of band, no mail went out
+   and no user was created. On the MCP path, use `findUser` instead of `/tmp/kc`.
 
-What it checks, for reference:
-
-1. Submit a known address on the client's login page. Expect no password field.
-2. Confirm mail actually arrived (real inbox, or your capture point) containing a
-   link with `login-actions/action-token` in it.
-3. Open that link with nothing else entered. Expect the browser to land back at the
-   application's redirect URI with an authorization code.
-4. Submit an address belonging to no account. Expect the *same* page response as
-   step 1 — and confirm, out of band, that no mail went out and no user was created.
+Steps 2 and 3 are the ones that count. A check that only confirms the "check your email"
+page will report success when no mail left the server. **Once all four pass, the
+configuration is done — stop there** rather than re-inspecting flows and executions.
+If one fails, the Troubleshooting table below says which setting to fix. Fix that one
+thing and rerun the failing step.
 
 Two client-side details, if scripting this rather than clicking through it:
 
-- Keycloak's auth cookies are `Secure; SameSite=None`. A browser sends them over
-  `http://localhost` anyway (loopback is a secure context); most HTTP client
-  libraries will not, and every form POST then fails as `cookie_not_found`. Clear the
-  flag on each response.
+- Keycloak's auth cookies are `Secure; SameSite=None`. Browsers and `curl` send them over
+  `http://localhost` (loopback counts as secure), but not over plain `http://` to any other
+  host, and every form POST then fails as `cookie_not_found`. Use `https` or `localhost`.
 - The action-token URL is exactly what a normal login-flow redirect produces — follow
   it the same way you would any other redirect chain, including through
   `required-action` hops, until it reaches the application's `redirect_uri`.

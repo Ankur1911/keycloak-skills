@@ -333,9 +333,7 @@ curl -i -H "Authorization: Bearer not.a.token" http://localhost:8000/api/reports
 ```bash
 # Ask the developer for an access token for this realm (e.g. one their app or a test client
 # obtained). Don't ask for or read a client secret or password to mint it yourself.
-TOKEN=<access-token-from-the-developer>
-
-curl -i -H "Authorization: Bearer $TOKEN" http://localhost:8000/api/reports
+curl -i -H "Authorization: Bearer <access-token-from-the-developer>" http://localhost:8000/api/reports
 ```
 
 **4. Confirm the roles are where you think.** Add a temporary route — this is the check that catches
@@ -350,7 +348,7 @@ def whoami(claims: Claims) -> dict[str, Any]:
 You want `["admin","user"]`. `[]` means the claims are not in the token — decode it and look:
 
 ```bash
-echo "$TOKEN" | cut -d. -f2 | base64 -d 2>/dev/null | jq '{iss, aud, azp, realm_access, resource_access}'
+echo '<access-token-from-the-developer>' | cut -d. -f2 | base64 -d 2>/dev/null | jq '{iss, aud, azp, realm_access, resource_access}'
 ```
 
 If `realm_access.roles` is missing from the token itself, stop editing Python — it is a role-mapper

@@ -105,8 +105,7 @@ plugins/phasetwo/skills/keycloak/
 │   ├── README.md                  ← reference manifest
 │   ├── admin-<intent>.md          ← 24 flat files, `-mcp` suffix or bare for REST
 │   └── idp/<vendor>.md            ← 18 vendor console click-paths (tooling-agnostic)
-├── assets/*.partial-import.json   ← 9 flow definitions
-└── scripts/browser_login.py
+└── assets/*.partial-import.json   ← 9 flow definitions
 ```
 
 This is a good design and I'd keep its core ideas: a router that carries no domain content,

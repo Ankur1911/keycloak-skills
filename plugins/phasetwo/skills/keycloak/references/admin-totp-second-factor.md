@@ -18,8 +18,7 @@ Compared to `admin:password-email-otp-mfa`, this uses:
 
 ```bash
 BASE=http://localhost:8080/auth
-ADMIN_TOKEN=<admin-access-token>   # from the developer, never their password — SKILL.md "Admin token"
-H="Authorization: Bearer $ADMIN_TOKEN"
+H="Authorization: Bearer <admin-access-token>"   # token from the developer, never their password — SKILL.md "Admin token"
 J='Content-Type: application/json'
 REALM=<realm>
 FLOW='totp-second-factor'

@@ -14,7 +14,7 @@ with Okta/Google", it belongs to the `keycloak` skill, not here.
 
 **This file is for `tooling=rest` only** — a Keycloak you run yourself (bare metal, Docker,
 Kubernetes) where you hold admin credentials. A Phase Two hosted deployment has **no self-service
-admin REST credential of any kind**: there is nothing to put in `$ADMIN_TOKEN`, so this file dead-ends
+admin REST credential of any kind**: there is no admin token to use, so this file dead-ends
 at Step 0. Use `client-registration-mcp.md` there instead. `rest` is not a fallback for `mcp`.
 
 Also not this file: Keycloak's **Dynamic Client Registration** service
@@ -37,15 +37,14 @@ you want when a human or an agent is registering one known app.
 
 `{uuid}` is **not** the `clientId`. See Step 2 — this is the single most common 404 here.
 
-## Step 0: environment and `$ADMIN_TOKEN`
+## Step 0: environment and the admin token
 
 ```bash
 BASE=http://localhost:8080        # include the relative path (e.g. /auth) if one is configured
 REALM=myrealm                       # the realm the app logs in against — NOT master
 
-# $ADMIN_TOKEN is a `master` admin access token the developer gives you.
-ADMIN_TOKEN=<admin-access-token>   # from the developer, never their password — SKILL.md "Admin token"
-H="Authorization: Bearer $ADMIN_TOKEN"
+# <admin-access-token> is a `master` admin access token the developer gives you.
+H="Authorization: Bearer <admin-access-token>"   # token from the developer, never their password — SKILL.md "Admin token"
 ```
 
 - **`$REALM` is the app's realm, not `master`.** You authenticate *as* a `master` admin and act *on*
@@ -331,7 +330,7 @@ catch the `webOrigins` failure — it needs a browser to trigger CORS at all.
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| `401 Unauthorized` on every admin call, after some worked | `$ADMIN_TOKEN` expired — it lives for minutes | ask the developer for a fresh token |
+| `401 Unauthorized` on every admin call, after some worked | `<admin-access-token>` expired — it lives for minutes | ask the developer for a fresh token |
 | `403 Forbidden` on `POST`/`PUT` | the admin user lacks `manage-clients` in **that** realm | grant `realm-management` → `manage-clients` on the target realm, or use a full `master` admin |
 | `409 Conflict` on `POST /clients` | the `clientId` is already taken — you are on Branch B, not A | switch to the read-merge-`PUT` in Step 3b |
 | `404` on `GET`/`PUT /clients/{id}` | you passed the human-readable `clientId` where the UUID belongs | resolve the UUID first (Step 2); `clientId` ≠ `id` |
@@ -344,4 +343,4 @@ catch the `webOrigins` failure — it needs a browser to trigger CORS at all.
 | `invalid_client` / "Client secret not provided" | the app is configured confidential but the client is `publicClient: true` (or the reverse) | make the app's config and `publicClient` agree; a public client sends no secret |
 | `unauthorized_client` on a client-credentials call | `serviceAccountsEnabled` is `false` | read-merge-`PUT` it to `true`; a service account user is created behind it |
 | Authorization code replay is possible on the SPA | `pkce.code.challenge.method` never set — Keycloak accepts PKCE but doesn't require it | set it to `S256` explicitly |
-| Nothing works and `$ADMIN_TOKEN` was never obtainable | this is a Phase Two hosted deployment | wrong file — use `client-registration-mcp.md`; `rest` is not a fallback here |
+| Nothing works and `<admin-access-token>` was never obtainable | this is a Phase Two hosted deployment | wrong file — use `client-registration-mcp.md`; `rest` is not a fallback here |

@@ -164,12 +164,12 @@ This decides the **tooling** for client registration. Ask directly; don't infer 
 If the answer is ambiguous, ask — don't guess and don't default to either side.
 
 **On `mcp`, `rest` is not a fallback.** A hosted deployment has no self-service admin REST credential
-of any kind, so the `rest` file fails at its first step: nothing to put in `$ADMIN_TOKEN`. If the
+of any kind, so the `rest` file fails at its first step: there is no admin token to use. If the
 developer declines MCP, point them at reconnecting it or at the dashboard.
 
 **On `rest`: base URL and Admin token.** The developer's configured base URL is
 `${user_config.keycloak_base_url}` (an unexpanded placeholder or empty value means unset — ask).
-`client-registration.md` needs `$ADMIN_TOKEN`, a `master`-realm admin access token: **ask the
+`client-registration.md` needs an admin token (`<admin-access-token>` in the snippets), a `master`-realm admin access token: **ask the
 developer for the token itself** — never for their admin password, and never read a password or
 token from files, environment variables or keychains on their machine. They mint it in their own
 terminal; it lasts about a minute by default, so on a `401` ask for a fresh one.
